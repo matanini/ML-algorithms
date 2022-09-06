@@ -32,9 +32,7 @@ class GNB:
         for feature in df_mean_likelihood.columns:
             for cls in self.cls_list:
                 cls_instance = ytrain == cls
-                df_mean_likelihood.loc[cls, feature] = xtrain[cls_instance][
-                    feature
-                ].mean()
+                df_mean_likelihood.loc[cls, feature] = xtrain[cls_instance][feature].mean()
 
         return df_mean_likelihood
 
@@ -43,16 +41,12 @@ class GNB:
         for feature in df_std_likelihood.columns:
             for cls in self.cls_list:
                 cls_instance = ytrain == cls
-                df_std_likelihood.loc[cls, feature] = xtrain[cls_instance][
-                    feature
-                ].std()
+                df_std_likelihood.loc[cls, feature] = xtrain[cls_instance][feature].std()
 
         return df_std_likelihood
 
     def __calc_gaussian_pdf_prob(self, x_feature_val, feature_mean, feature_std):
-        exponent = np.exp(
-            -((x_feature_val - feature_mean) ** 2 / (2 * feature_std**2))
-        )
+        exponent = np.exp(-((x_feature_val - feature_mean) ** 2 / (2 * feature_std**2)))
         return (1 / ((2 * np.pi) ** (1 / 2) * feature_std)) * exponent
 
     def __calc_aposterior_probs(self, Xtest: pd.DataFrame):

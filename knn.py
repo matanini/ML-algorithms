@@ -1,7 +1,10 @@
 import pandas as pd
 
-class KNN:
 
+class KNN:
+    """
+    Only feed numeric columns
+    """
     def __init__(self, neighbors: int, distance_metric: str = "euclidean", scaling: str = None) -> None:
         self.k = neighbors
         self.scaling = scaling
@@ -32,9 +35,8 @@ class KNN:
             pred_class = self.__vote(k_nearest_neighbors)
             ypred.iloc[i] = pred_class
         return ypred
-            
 
-    def __scale_minmax(self, data :pd.DataFrame) -> None:
+    def __scale_minmax(self, data: pd.DataFrame) -> None:
         for col in data.columns:
             min_value = data[col].min()
             max_value = data[col].max()
@@ -43,7 +45,7 @@ class KNN:
                 data.loc[i, col] = (value - min_value) / (max_value - min_value)
         return data
 
-    def __scale_t_distribution(self, data :pd.DataFrame) -> None:
+    def __scale_t_distribution(self, data: pd.DataFrame) -> None:
         for col in data.columns:
             mean_value = data[col].mean()
             std_value = data[col].std(ddof=1)
@@ -55,9 +57,9 @@ class KNN:
     def __calculate_all_distance(self, feature_vector):
         dist_list = []
         for (idx, vector) in self.Xtrain.iterrows():
-            dist_list.append((idx,self.__calculate_distance(vector, feature_vector)))
-        sorted_list = sorted(dist_list, key = lambda x: x[1])
-        return sorted_list[:self.k]
+            dist_list.append((idx, self.__calculate_distance(vector, feature_vector)))
+        sorted_list = sorted(dist_list, key=lambda x: x[1])
+        return sorted_list[: self.k]
 
     def __calculate_distance(self, vector1, vector2) -> float:
         if len(vector1) != len(vector2):
@@ -73,10 +75,9 @@ class KNN:
         for neighbor in k_nearest_neighbors:
             neighbor_cls = self.ytrain.loc[neighbor[0]]
             cls_list.append(neighbor_cls)
-        return max(set(cls_list), key = cls_list.count)
-    
+        return max(set(cls_list), key=cls_list.count)
+
     def calc_accuracy(self, ypred, ytest):
         correct = (ytest == ypred).sum()
         accuracy = correct / ytest.shape[0]
         return accuracy
-
