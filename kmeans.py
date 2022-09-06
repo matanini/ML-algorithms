@@ -1,98 +1,91 @@
-import sys
+import random
 import pandas as pd
 import numpy as np
 
 
 class KMeans:
-    def __init__(self, k: int, init:str = "lloyd", distance_metric: str = "euclidean", scaling: str = None, change_val = 0.1) -> None:
-        self.k = k
-        if distance_metric is not None:
-            if distance_metric == "manhattan":
-                self.p = 1
-            elif distance_metric == "euclidean":
-                self.p = 2
-        self.scaling = scaling
+    def __init__(
+        self,
+        n_clusters: int,
+        init: str = "lloyd",
+        distance_metric: str = "euclidean",
+        max_iter=300,
+    ) -> None:
+        self.n_clusters = n_clusters
+        self.max_iter = max_iter
+        if distance_metric is None:
+            raise ValueError("distance_metric cant be None")
+        if distance_metric == "manhattan":
+            self.p = 1
+        elif distance_metric == "euclidean":
+            self.p = 2
+
         self.init_method = init
-        self.change_val = change_val
-        self.prototypes = None
+        self.centroids = None
 
     def fit(self, Xtrain: pd.DataFrame) -> None:
         self.Xtrain = Xtrain
-        if self.scaling is not None:
-            if self.scaling == "minmax":
-                self.Xtrain = self.__scale_minmax(self.Xtrain)
-            elif self.scaling == "t-distribution":
-                self.Xtrain = self.__scale_t_distribution(self.Xtrain)
 
-        self.__get_prototypes()
-        self.pred = pd.Series(index=Xtrain.index)
-        while True:
-            for (i, feature_vector) in self.Xtrain.iterrows():
-                self.pred.iloc[i] = self.__assign_prototype_to_vector(feature_vector)
-            prev_iter_prototypes = self.prototypes.copy()
-            self.__get_prototypes()
-            if self.__check_prototypes_changes(prev_iter_prototypes) < self.change_val:
-                break
+        # Initialize centroids
+        self.__get_centroids()
+
+        # Main loop
+        self.iterations = 0
+        self.prev_centroids = None
+
+        while (
+            np.not_equal(self.centroids, self.prev_centroids).any()
+            and self.iterations < self.max_iter
+        ):
+            self.sorted_vectors = [[] for _ in range(self.n_clusters)]
+            for feature_vector in self.Xtrain:
+                dists = self.__calc_euclidean(feature_vector, self.centroids)
+                centroid_index = np.argmin(dists)
+                self.sorted_vectors[centroid_index].append(feature_vector)
+
+            self.__get_centroids()
+            self.iterations += 1
 
     def predict(self, Xtest: pd.DataFrame) -> pd.Series:
-        if self.scaling is not None:
-            if self.scaling == "minmax":
-                Xtest = self.__scale_minmax(Xtest)
-            elif self.scaling == "t-distribution":
-                Xtest = self.__scale_t_distribution(Xtest)
-        pred = pd.Series(index=Xtest.index)
+
+        pred = np.ndarray(self.Xtrain)
         for (i, feature_vector) in Xtest.iterrows():
-            pred.iloc[i] = self.__assign_prototype_to_vector(feature_vector)
+            pred[i] = self.__assign_centroid_to_vector(feature_vector)
         return pred
 
-    def __scale_minmax(self, data: pd.DataFrame) -> None:
-        for col in data.columns:
-            min_value = data[col].min()
-            max_value = data[col].max()
+    def __get_centroids(self) -> list:
+        if self.centroids is None:
+            if self.init_method == "lloyd":
+                # centroids random initialization
 
-            for i, value in enumerate(data[col]):
-                data.loc[i, col] = (value - min_value) / (max_value - min_value)
-        return data
+                # min_, max_ = np.min(self.Xtrain, axis=0), np.max(self.Xtrain, axis=0)
+                self.centroids = [
+                    random.choice(self.Xtrain).to_numpy() for _ in range(self.n_clusters)
+                ]
 
-    def __scale_t_distribution(self, data: pd.DataFrame) -> None:
-        for col in data.columns:
-            mean_value = data[col].mean()
-            std_value = data[col].std(ddof=1)
+            if self.init_method == "kmeans++":
+                self.centroids = [random.choice(self.Xtrain)]
+                for _ in range(self.n_clusters - 1):
+                    dists = np.sum(
+                        [
+                            self.__calc_euclidean(centroid, self.Xtrain)
+                            for centroid in self.centroids
+                        ],
+                        axis=0,
+                    )
+                    dists /= np.sum(dists)
+                    new_centroid = np.random.choice(range(len(self.Xtrain)), size=1,p=dists)
+                    self.centroids.append(self.Xtrain[new_centroid])
 
-            for i, value in enumerate(data[col]):
-                data.loc[i, col] = (value - mean_value) / std_value
-        return data
-
-    def __get_prototypes(self) -> list:
-        if self.prototypes is None:
-            if self.init_method == 'lloyd':
-                # Prototypes random initialization
-                prototypes = []
-                for (i, feature_vector) in self.Xtrain.sample(self.k, ignore_index=True, random_state=42).iterrows():
-                    prototypes.append((i, feature_vector))
-            if self.init_method == 'kmeans++':
-                prototypes = []
-                prototypes.append((0,self.Xtrain.sample(ignore_index=True, random_state=42).to_numpy()[0]))
-                for i in range(1, self.k):
-                    total_dist = []
-                    for (_, feature_vector) in self.Xtrain.iterrows():
-                        
-                        for (cls,protoype) in prototypes:
-                            temp_dist = self.__calculate_distance(protoype, feature_vector)
-                            
-                            dist = min(sys.maxsize, temp_dist)
-                        total_dist.append(dist)
-                    
-                    next_prototype = self.Xtrain[np.argmax(np.array(total_dist)), :]   
-                    prototypes.append((i, next_prototype))
-
-            self.prototypes = prototypes
-            
         else:
-            # Prototypes update
-            for i in range(self.k):
-                cls_vectors = self.Xtrain[self.pred == i]
-                self.prototypes[i] = (i, cls_vectors.mean())
+            # Update centroids
+            self.prev_centroids = self.centroids
+            self.centroids = [
+                np.mean(centroid, axis=0) for centroid in self.sorted_vectors
+            ]
+            for i in range(self.n_clusters):
+                if np.isnan(self.centroids[i]).any():
+                    self.centroids[i] = self.prev_centroids[i]
 
     def __calculate_distance(self, vector1, vector2) -> float:
         if len(vector1) != len(vector2):
@@ -103,32 +96,41 @@ class KMeans:
                 sum += abs(x - y) ** self.p
             return sum ** (1 / self.p)
 
-    def __assign_prototype_to_vector(self, feature_vector):
-        dist_list = []
-        for (idx, prototype) in self.prototypes:
+    def __calc_euclidean(self, vector, centroids):
+        return np.sqrt(np.sum((vector - centroids) ** 2, axis=1))
 
-            dist_list.append((idx, self.__calculate_distance(prototype, feature_vector)))
+    def __assign_centroid_to_vector(self, feature_vector):
+        dist_list = []
+        for (idx, centroid) in self.centroids:
+
+            dist_list.append((idx, self.__calculate_distance(centroid, feature_vector)))
         sorted_list = sorted(dist_list, key=lambda x: x[1])
         return sorted_list[0][0]
 
-    def __check_prototypes_changes(self, prev_iter_prototypes):
-        changes_sum = 0
-        for i in range(len(self.prototypes)):
-            for val1, val2 in zip(self.prototypes[i][1], prev_iter_prototypes[i][1]):
-                changes_sum += abs(val1 - val2)
-
-        return changes_sum
+    def evaluate(self):
+        centroids = []
+        centroid_idxs = []
+        for x in self.Xtrain:
+            dists = self.__calc_euclidean(x, self.centroids)
+            centroid_idx = np.argmin(dists)
+            centroids.append(self.centroids[centroid_idx])
+            centroid_idxs.append(centroid_idx)
+        return centroids, centroid_idx
 
     def silhouette_score(self) -> float:
         silhouette = pd.DataFrame(columns=["a", "b", "s"], index=self.Xtrain.index)
         for (i, feature_vector) in self.Xtrain.iterrows():
             vector_class = self.pred.iloc[i]
-            silhouette.loc[i, "a"] = self.__calc_a_for_silhouette(feature_vector, vector_class)
-            silhouette.loc[i, "b"] = self.__calc_b_for_silhouette(feature_vector, vector_class)
-            silhouette.loc[i, "s"] = (silhouette.loc[i, "b"] - silhouette.loc[i, "a"]) / max(
-                silhouette.loc[i, "a"], silhouette.loc[i, "b"]
+            silhouette.loc[i, "a"] = self.__calc_a_for_silhouette(
+                feature_vector, vector_class
             )
-        
+            silhouette.loc[i, "b"] = self.__calc_b_for_silhouette(
+                feature_vector, vector_class
+            )
+            silhouette.loc[i, "s"] = (
+                silhouette.loc[i, "b"] - silhouette.loc[i, "a"]
+            ) / max(silhouette.loc[i, "a"], silhouette.loc[i, "b"])
+
         return silhouette.s.mean()
 
     def __calc_a_for_silhouette(self, feature_vector, cls):
@@ -140,7 +142,7 @@ class KMeans:
 
     def __calc_b_for_silhouette(self, feature_vector, cls):
         cls_sum = []
-        for i in range(self.k):
+        for i in range(self.n_clusters):
             if i != cls:
                 cls_vectors = self.Xtrain[self.pred == i]
                 b_sum = 0
