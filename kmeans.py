@@ -1,6 +1,6 @@
-from math import dist
-from mimetypes import init
+import sys
 import pandas as pd
+import numpy as np
 
 
 class KMeans:
@@ -73,18 +73,21 @@ class KMeans:
             if self.init_method == 'kmeans++':
                 prototypes = []
                 prototypes.append((0,self.Xtrain.sample(ignore_index=True, random_state=42).to_numpy()[0]))
-                print(prototypes)
-                for centroid in range(1, self.k):
-                    dist_to_prototype = []
-                    for (i, feature_vector) in self.Xtrain.iterrows():
-                        dist_list = []
-                        for (idx, prototype) in prototypes:
-                            print(prototype, feature_vector.to_numpy())
-                            dist_list.append(self.__calculate_distance(prototype,feature_vector))
-                        dist_to_prototype.append(sum(dist_list) / len(dist_list))
-                    prototypes[i] = sorted(dist_to_prototype, key = lambda x:x[1])[0][1]
+                for i in range(1, self.k):
+                    total_dist = []
+                    for (_, feature_vector) in self.Xtrain.iterrows():
+                        
+                        for (cls,protoype) in prototypes:
+                            temp_dist = self.__calculate_distance(protoype, feature_vector)
+                            
+                            dist = min(sys.maxsize, temp_dist)
+                        total_dist.append(dist)
+                    
+                    next_prototype = self.Xtrain[np.argmax(np.array(total_dist)), :]   
+                    prototypes.append((i, next_prototype))
 
             self.prototypes = prototypes
+            
         else:
             # Prototypes update
             for i in range(self.k):
