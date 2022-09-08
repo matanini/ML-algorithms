@@ -1,3 +1,3 @@
-from gnb import GNB
-from knn import KNN
-from kmeans import KMeans
+from Models.gnb import GNB
+from Models.knn import KNN
+from Models.kmeans import KMeans
