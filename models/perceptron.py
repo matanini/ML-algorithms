@@ -37,47 +37,45 @@ class Perceptron:
         prev_delta_weights = np.array([None] * len(self.weights))
 
         while np.not_equal(delta_weight, prev_delta_weights).any():
-
-            # Debugging
-            # print(f"weights:{self.weights}, prev_delta_weights:{prev_delta_weights}")
-            # print(f"delta_weight:{delta_weight} , learning_const:{self.learning_const} , _class - self.output:{(_class - self.output)}")
-            # print(f"mult:{self.learning_const * (_class - self.output) * self.inputs}")
-            # print("----")
+            """Debugging prints - uncomment to use
+            print(f"delta_weight:{delta_weight}, prev_delta_weights:{prev_delta_weights}")
+            print(f"weights:{self.weights}, learning_const:{self.learning_const}")
+            print("----")"""
 
             prev_delta_weights = delta_weight.copy()
-            delta_weight = delta_weight + self.learning_const * (_class - self.output) * self.inputs
+            der = self._activation_fucntion_der.get(self.activation_func)
+            delta_weight = delta_weight + self.learning_const * self.inputs * der(_class)
             self.weights = self.weights + delta_weight
             self.output = self.feedforward()
 
     def _sign(self, x):
         return 1 if x > 0 else 0
 
-    def _sign_der(self,_class):
-        return self.learning_const * (_class - self.output) * self.inputs
+    def _sign_der(self, _class):
+        return _class - self.output
 
     def _sigmoid(self, x):
         sig = 1 / (1 + np.exp(-x))
         return 1 if sig >= 0.5 else 0
 
     def _sigmoid_der(self, _class):
-        return self.learning_const * (_class - self.output) * self.output* (1-self.output)*self.inputs
+        return (_class - self.output) * self.output * (1 - self.output)
 
     def _tanh(self, x):
         sig = (np.exp(2 * x) - 1) / (np.exp(2 * x) + 1)
         return 1 if sig >= 0 else 0
 
     def _tanh_der(self, _class):
-        return self.learning_const * (_class - self.output) * self.inputs
+        return _class - self.output
 
     def _relu(self, x):
         return max(0, x)
 
     def _relu_der(self, _class):
-        return self.learning_const * (_class - self.output) * self.inputs
+        return _class - self.output
 
     def set_weights(self, weights):
         self.weights = np.array(weights)
-    
 
     def __str__(self):
         return f"Perceptron: {self.output}"
