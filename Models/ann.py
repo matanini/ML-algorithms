@@ -20,35 +20,42 @@ class ANN:
         for i in range(1, len(self.vector_size_array)):
             inner_layer = []
             for _ in range(self.vector_size_array[i]):
-                inner_layer.append(Perceptron(weights=self._generate_init_weights(self.vector_size_array[i - 1]), activation_func=self.activation, output_layer=True))
+                inner_layer.append(Perceptron(weights=self.generate_init_weights(self.vector_size_array[i - 1]), activation_func=self.activation))
             self.network.append(inner_layer)
 
-    def _generate_init_weights(self, size):
+    def generate_init_weights(self, size):
         random_weights = np.random.rand(size)
-        random_weights = [x if np.random.randint(3) != 2 else -x for x in random_weights]
+        random_weights = [x if np.random.randint(2) != 1 else -x for x in random_weights]
         return random_weights
 
     def fit(self, X: pd.DataFrame, y: pd.Series):
 
         self._init_layers(X.shape[1], len(y.unique()))
+        # Initialize backpropagation weights
+        error_term = np.array([[0]*len(self.vector_size_array)]*(max(self.vector_size_array)))
         
         for index, row in X.iterrows():
             
             # Feed forward
-            f_v = row.tolist()
+            input_x = row.tolist()
             for layer in self.network:
                 pred = []
                 for p in layer:
-                    p.set_inputs(f_v)
+                    p.set_inputs(input_x)
                     pred.append(p.fit(y.loc[index]))
-                f_v = pred
+                input_x = pred
 
             # Backpropagation
-            output_delta_array = []
-            for o in pred:
-                output_delta_array.append(o * (1-o) * (y.loc[index] - o))
-            print(f"output delta array:{output_delta_array}")
-            for 
+            
+            for i, o in enumerate(pred):
+                error_term[i][-1] = o * (1-o) * (y.loc[index] - o)
+                
+
+            for i in range(len(self.vector_size_array)-2, -1,-1):
+                for j in range(max(self.vector_size_array)):
+                    if j < self.vector_size_array[i]:
+                        print(f"[{i},{j}]",self.network[i][j])
+                    # error_term[i] = error_term[j] * self.network[i][j].weights
 
 
 

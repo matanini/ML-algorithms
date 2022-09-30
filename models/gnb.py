@@ -41,7 +41,7 @@ class GNB:
         for feature in df_std_likelihood.columns:
             for cls in self.cls_list:
                 cls_instance = ytrain == cls
-                df_std_likelihood.loc[cls, feature] = xtrain[cls_instance][feature].std()
+                df_std_likelihood.loc[cls, feature] = xtrain[cls_instance][feature].std(ddof = 1)
 
         return df_std_likelihood
 
