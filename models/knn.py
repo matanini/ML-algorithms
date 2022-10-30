@@ -77,7 +77,3 @@ class KNN:
             cls_list.append(neighbor_cls)
         return max(set(cls_list), key=cls_list.count)
 
-    def calc_accuracy(self, ypred, ytest):
-        correct = (ytest == ypred).sum()
-        accuracy = correct / ytest.shape[0]
-        return accuracy

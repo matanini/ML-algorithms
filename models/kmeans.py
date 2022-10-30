@@ -35,7 +35,7 @@ class KMeans:
 
         while (
             np.not_equal(self.centroids, self.prev_centroids).any()
-            and self.iterations < self.max_iter
+            # and self.iterations < self.max_iter
         ):
             self.sorted_vectors = [[] for _ in range(self.n_clusters)]
             for feature_vector in self.Xtrain:
@@ -59,7 +59,8 @@ class KMeans:
                 # centroids random initialization
 
                 self.centroids = [
-                    random.choice(self.Xtrain).to_numpy() for _ in range(self.n_clusters)
+                    random.choice(self.Xtrain)
+                    for _ in range(self.n_clusters)
                 ]
 
             if self.init_method == "kmeans++":
@@ -73,7 +74,9 @@ class KMeans:
                         axis=0,
                     )
                     dists /= np.sum(dists)
-                    new_centroid = np.random.choice(range(len(self.Xtrain)), size=1,p=dists)
+                    new_centroid = np.random.choice(
+                        range(len(self.Xtrain)), size=1, p=dists
+                    )
                     self.centroids.append(self.Xtrain[new_centroid])
 
         else:
@@ -114,12 +117,13 @@ class KMeans:
             centroid_idx = np.argmin(dists)
             centroids.append(self.centroids[centroid_idx])
             centroid_idxs.append(centroid_idx)
-        return centroids, centroid_idx
+        return centroids, centroid_idxs
 
     def silhouette_score(self) -> float:
         silhouette = pd.DataFrame(columns=["a", "b", "s"], index=self.Xtrain.index)
         for (i, feature_vector) in self.Xtrain.iterrows():
             vector_class = self.pred.iloc[i]
+
             silhouette.loc[i, "a"] = self.__calc_a_for_silhouette(
                 feature_vector, vector_class
             )

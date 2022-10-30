@@ -70,7 +70,3 @@ class GNB:
 
         return df_aposterior_probs
 
-    def calc_accuracy(self, ypred, ytest):
-        correct = (ytest == ypred).sum()
-        accuracy = correct / ytest.shape[0]
-        return accuracy
