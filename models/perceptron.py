@@ -23,12 +23,6 @@ class Perceptron:
             "tanh": self._tanh,
             "relu": self._relu,
         }
-        # self._activation_fucntion_deriv = {
-        #     "sign": self._sign_deriv,
-        #     "sigmoid": self._sigmoid_deriv,
-        #     "tanh": self._tanh_deriv,
-        #     "relu": self._relu_deriv,
-        # }
 
     def fit(self, y):
         self.output = self.feedforward()
@@ -54,9 +48,7 @@ class Perceptron:
             prev_delta_weights = delta_weight.copy()
             delta_weight = np.zeros(len(self.weights))
             
-            # deriv = self._activation_fucntion_deriv.get(self.activation_func)
             delta_weight = delta_weight + self.learning_const * self.inputs * self.deriv * (_class - self.output)
-            # delta_weight = delta_weight + (self.learning_const * self.inputs * (_class - self.output))
             self.weights = self.weights + delta_weight
             self.output = self.feedforward()
 

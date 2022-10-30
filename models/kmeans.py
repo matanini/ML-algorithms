@@ -58,7 +58,6 @@ class KMeans:
             if self.init_method == "lloyd":
                 # centroids random initialization
 
-                # min_, max_ = np.min(self.Xtrain, axis=0), np.max(self.Xtrain, axis=0)
                 self.centroids = [
                     random.choice(self.Xtrain).to_numpy() for _ in range(self.n_clusters)
                 ]
