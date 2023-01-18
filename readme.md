@@ -5,7 +5,6 @@ Included ML algorithms:
 - Gaussian Naive Baise
 - K Nearest Neighbors
 - K-Means
-- Basic Perceptron implementation
 
 Also included in preprocessing:
 - Min-Max scaler
